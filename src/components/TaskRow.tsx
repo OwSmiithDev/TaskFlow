@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Pencil, Trash2 } from 'lucide-react'
+import { memo } from 'react'
 import { useApp } from '../context/AppContext'
 import type { Task } from '../types'
 import { TAG_COLORS, getColStyle } from '../types'
+import { resolveDoneColumn, resolveOpenColumn } from '../utils/columns'
 import { Avatar } from './Avatar'
 import { DueDateLabel } from './DueDateLabel'
 import { PriorityBadge } from './PriorityBadge'
@@ -11,9 +13,11 @@ interface Props {
   task: Task
 }
 
-export function TaskRow({ task }: Props) {
+function TaskRowBase({ task }: Props) {
   const { updateTask, setViewingTask, setEditingTask, setDeletingTaskId, columns, tags } = useApp()
-  const isDone = task.status === 'done'
+  // The pipeline is user-editable, so "done" has to be resolved, never assumed.
+  const doneCol = resolveDoneColumn(columns)
+  const isDone = doneCol !== null && task.status === doneCol.id
   const col = columns.find(c => c.id === task.status) ?? columns[0]
   const colStyle = getColStyle(col)
 
@@ -42,8 +46,9 @@ export function TaskRow({ task }: Props) {
         transition={{ type: 'spring', stiffness: 500, damping: 20 }}
         onClick={e => {
           e.stopPropagation()
-          const nextStatus = isDone ? (columns[0]?.id ?? 'todo') : 'done'
-          updateTask(task.id, { status: nextStatus })
+          const target = isDone ? resolveOpenColumn(columns) : doneCol
+          if (!target) return
+          updateTask(task.id, { status: target.id })
         }}
         aria-label={isDone ? 'Marcar como pendente' : 'Marcar como concluída'}
         className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all
@@ -119,14 +124,14 @@ export function TaskRow({ task }: Props) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <div className="flex items-center gap-0.5 shrink-0 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
         <motion.button
           whileHover={{ scale: 1.15 }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: 'spring', stiffness: 500, damping: 20 }}
           onClick={e => { e.stopPropagation(); setEditingTask(task) }}
           aria-label="Editar tarefa"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400
+          className="p-1.5 pointer-coarse:p-2.5 rounded-lg text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400
                      hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
         >
           <Pencil size={14} />
@@ -137,7 +142,7 @@ export function TaskRow({ task }: Props) {
           transition={{ type: 'spring', stiffness: 500, damping: 20 }}
           onClick={e => { e.stopPropagation(); setDeletingTaskId(task.id) }}
           aria-label="Excluir tarefa"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400
+          className="p-1.5 pointer-coarse:p-2.5 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400
                      hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
         >
           <Trash2 size={14} />
@@ -146,3 +151,5 @@ export function TaskRow({ task }: Props) {
     </motion.div>
   )
 }
+
+export const TaskRow = memo(TaskRowBase)

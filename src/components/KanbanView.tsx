@@ -10,8 +10,9 @@ import {
 import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { useFilteredTasks } from '../hooks/useFilteredTasks'
 import type { Task } from '../types'
 import { KanbanColumn } from './KanbanColumn'
 import { TaskCard } from './TaskCard'
@@ -34,7 +35,11 @@ const columnVariants = {
 
 export function KanbanView() {
   const { tasks, columns, reorderTasks, showToast } = useApp()
+  // Status is expressed by the columns themselves, and each column keeps its
+  // own insertion order, so those two filters are skipped here.
+  const visibleTasks = useFilteredTasks({ applyStatusFilter: false, applySort: false })
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+  const dragOriginStatus = useRef<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -42,7 +47,9 @@ export function KanbanView() {
   )
 
   function onDragStart({ active }: DragStartEvent) {
-    setActiveTask(tasks.find(t => t.id === active.id) ?? null)
+    const task = tasks.find(t => t.id === active.id) ?? null
+    dragOriginStatus.current = task?.status ?? null
+    setActiveTask(task)
   }
 
   function onDragOver({ active, over }: DragOverEvent) {
@@ -58,10 +65,13 @@ export function KanbanView() {
   }
 
   function onDragEnd({ active, over }: DragEndEvent) {
+    const startedIn = dragOriginStatus.current
+    dragOriginStatus.current = null
     setActiveTask(null)
     if (!over || active.id === over.id) return
     const activeTask = tasks.find(t => t.id === active.id)
     if (!activeTask) return
+
     const overIsColumn = columns.some(c => c.id === over.id)
     if (!overIsColumn) {
       const overTask = tasks.find(t => t.id === over.id)
@@ -71,11 +81,21 @@ export function KanbanView() {
       const newIdx = colTasks.findIndex(t => t.id === over.id)
       if (oldIdx !== newIdx) {
         const reordered = arrayMove(colTasks, oldIdx, newIdx)
-        reorderTasks([...tasks.filter(t => t.status !== activeTask.status), ...reordered])
+        // Keep the untouched tasks in place instead of appending the whole
+        // column at the end of the list.
+        const others = tasks.filter(t => t.status !== activeTask.status)
+        const firstIdx = tasks.findIndex(t => t.status === activeTask.status)
+        const head = others.filter(t => tasks.indexOf(t) < firstIdx)
+        const tail = others.filter(t => tasks.indexOf(t) > firstIdx)
+        reorderTasks([...head, ...reordered, ...tail])
       }
     }
-    const col = columns.find(c => c.id === activeTask.status)
-    if (col) showToast(`Movido para "${col.rotulo}"`, 'info')
+
+    // Only announce a move that actually changed column.
+    if (startedIn && startedIn !== activeTask.status) {
+      const col = columns.find(c => c.id === activeTask.status)
+      if (col) showToast(`Movido para "${col.rotulo}"`, 'info')
+    }
   }
 
   return (
@@ -97,7 +117,7 @@ export function KanbanView() {
             <motion.div key={col.id} variants={columnVariants}>
               <KanbanColumn
                 column={col}
-                tasks={tasks.filter(t => t.status === col.id)}
+                tasks={visibleTasks.filter(t => t.status === col.id)}
               />
             </motion.div>
           ))}

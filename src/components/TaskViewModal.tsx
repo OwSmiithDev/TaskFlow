@@ -10,17 +10,17 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { useModalBehavior } from '../hooks/useModalBehavior'
 import { PRIORITY_CONFIG, TAG_COLORS, getColStyle } from '../types'
 import type { Subtarefa } from '../types'
+import { resolveDoneColumn } from '../utils/columns'
+import { isOverdue, todayLocal } from '../utils/dates'
 import { Avatar } from './Avatar'
-import { isOverdue } from './DueDateLabel'
 import { SubtarefasSection } from './SubtarefasSection'
 
 type ModalMode = 'view' | 'concluir' | 'pendente'
-
-const today = new Date().toISOString().split('T')[0]
 
 export function TaskViewModal() {
   const {
@@ -36,12 +36,14 @@ export function TaskViewModal() {
 
   const [mode, setMode] = useState<ModalMode>('view')
   const [solucao, setSolucao] = useState('')
-  const [dataConclusao, setDataConclusao] = useState(today)
+  // Computed per mount, in local time — `toISOString()` yields the UTC date,
+  // which in UTC-3 is already tomorrow after 21:00.
+  const [dataConclusao, setDataConclusao] = useState(todayLocal)
   const [motivoPendencia, setMotivoPendencia] = useState('')
-  const [subtarefas, setSubtarefas] = useState<Subtarefa[]>([])
   const [concluirHighlight, setConcluirHighlight] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
+  const panelRef = useModalBehavior<HTMLDivElement>(() => setViewingTask(null))
 
   // Scroll form into view when mode changes
   useEffect(() => {
@@ -54,12 +56,12 @@ export function TaskViewModal() {
     }
   }, [mode])
 
-  // Sync subtarefas from task when it changes
-  useEffect(() => {
-    if (viewingTask) {
-      setSubtarefas(viewingTask.subtarefas ?? [])
-    }
-  }, [viewingTask?.id])
+  // Derived from the task instead of copied into state by an effect: the copy
+  // caused a second render pass on every open and could drift from the store.
+  const subtarefas = useMemo<Subtarefa[]>(
+    () => viewingTask?.subtarefas ?? [],
+    [viewingTask?.subtarefas],
+  )
 
   // Highlight "Concluído" button when all subtarefas just got completed
   const prevAllDoneRef = useRef(false)
@@ -84,7 +86,6 @@ export function TaskViewModal() {
   const pendingCount = subtarefas.filter(s => !s.concluida).length
 
   function handleSubtarefasChange(updated: Subtarefa[]) {
-    setSubtarefas(updated)
     updateTask(task.id, { subtarefas: updated })
   }
 
@@ -128,10 +129,8 @@ export function TaskViewModal() {
   }
 
   function saveConcluido() {
-    const doneCol =
-      columns.find(c => c.id === 'done') ??
-      columns.find(c => c.rotulo.toLowerCase().includes('conclu')) ??
-      columns[columns.length - 1]
+    const doneCol = resolveDoneColumn(columns)
+    if (!doneCol) return
     updateTask(task.id, {
       status: doneCol.id,
       solucao: solucao.trim() || undefined,
@@ -187,6 +186,7 @@ export function TaskViewModal() {
 
       {/* Panel — bottom-sheet on mobile, centered dialog on sm+ */}
       <motion.div
+        ref={panelRef}
         initial={{ opacity: 0, y: 48 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 32 }}

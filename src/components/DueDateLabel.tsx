@@ -1,4 +1,5 @@
 import { CalendarClock } from 'lucide-react'
+import { isOverdue } from '../utils/dates'
 
 interface Props {
   prazo: string
@@ -8,10 +9,6 @@ interface Props {
 function formatDate(iso: string) {
   const d = new Date(iso + 'T00:00:00')
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-}
-
-export function isOverdue(prazo: string) {
-  return new Date(prazo + 'T00:00:00') < new Date(new Date().toDateString())
 }
 
 export function DueDateLabel({ prazo, size = 'md' }: Props) {
