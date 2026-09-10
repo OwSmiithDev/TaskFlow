@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion'
 import { AlertTriangle } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { useModalBehavior } from '../hooks/useModalBehavior'
 
 interface Props {
   title: string
@@ -9,6 +11,12 @@ interface Props {
 }
 
 export function ConfirmDialog({ title, message, onConfirm, onCancel }: Props) {
+  const panelRef = useModalBehavior<HTMLDivElement>(onCancel)
+  const cancelRef = useRef<HTMLButtonElement>(null)
+
+  // Focus the non-destructive action, so Enter can't delete by accident.
+  useEffect(() => { cancelRef.current?.focus() }, [])
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -27,6 +35,7 @@ export function ConfirmDialog({ title, message, onConfirm, onCancel }: Props) {
 
       {/* Dialog */}
       <motion.div
+        ref={panelRef}
         initial={{ opacity: 0, scale: 0.88, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.92, y: 8 }}
@@ -59,6 +68,7 @@ export function ConfirmDialog({ title, message, onConfirm, onCancel }: Props) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+            ref={cancelRef}
             onClick={onCancel}
             className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300
                        bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700

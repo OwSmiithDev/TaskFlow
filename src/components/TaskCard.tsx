@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { motion } from 'framer-motion'
 import { GripVertical, Pencil, Trash2 } from 'lucide-react'
-import { useRef } from 'react'
+import { memo, useRef } from 'react'
 import { useApp } from '../context/AppContext'
 import type { Task } from '../types'
 import { TAG_COLORS } from '../types'
@@ -15,7 +15,7 @@ interface Props {
   overlay?: boolean
 }
 
-export function TaskCard({ task, overlay }: Props) {
+function TaskCardBase({ task, overlay }: Props) {
   const { setViewingTask, setEditingTask, setDeletingTaskId, tags } = useApp()
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
 
@@ -100,13 +100,13 @@ export function TaskCard({ task, overlay }: Props) {
           {task.prazo && <DueDateLabel prazo={task.prazo} size="sm" />}
         </div>
 
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-0.5 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
           <motion.button
             whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 500, damping: 20 }}
             onClick={e => { e.stopPropagation(); setEditingTask(task) }}
-            className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400
+            className="p-1.5 pointer-coarse:p-2.5 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400
                        hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
             aria-label="Editar tarefa"
           >
@@ -117,7 +117,7 @@ export function TaskCard({ task, overlay }: Props) {
             whileTap={{ scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 500, damping: 20 }}
             onClick={e => { e.stopPropagation(); setDeletingTaskId(task.id) }}
-            className="p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400
+            className="p-1.5 pointer-coarse:p-2.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400
                        hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
             aria-label="Excluir tarefa"
           >
@@ -129,7 +129,9 @@ export function TaskCard({ task, overlay }: Props) {
   )
 }
 
-export function AnimatedTaskCard({ task }: { task: Task }) {
+export const TaskCard = memo(TaskCardBase)
+
+function AnimatedTaskCardBase({ task }: { task: Task }) {
   return (
     <motion.div
       layout
@@ -146,3 +148,5 @@ export function AnimatedTaskCard({ task }: { task: Task }) {
     </motion.div>
   )
 }
+
+export const AnimatedTaskCard = memo(AnimatedTaskCardBase)

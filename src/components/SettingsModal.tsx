@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { useModalBehavior } from '../hooks/useModalBehavior'
 import type { ColumnColorKey, KanbanCol, TagColor } from '../types'
 import {
   COLUMN_COLORS,
@@ -548,7 +549,7 @@ function DadosTab() {
   return (
     <div className="space-y-5">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: 'Tarefas', value: tasks.length, cls: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' },
           { label: 'Colunas', value: columns.length, cls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
@@ -620,6 +621,7 @@ type SettingsTab = 'pipeline' | 'etiquetas' | 'dados'
 export function SettingsModal() {
   const { isSettingsOpen, setIsSettingsOpen } = useApp()
   const [tab, setTab] = useState<SettingsTab>('pipeline')
+  const panelRef = useModalBehavior<HTMLDivElement>(() => setIsSettingsOpen(false))
 
   if (!isSettingsOpen) return null
 
@@ -639,6 +641,7 @@ export function SettingsModal() {
       />
 
       <motion.div
+        ref={panelRef}
         initial={{ opacity: 0, scale: 0.94, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -665,7 +668,7 @@ export function SettingsModal() {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 dark:border-gray-800 px-6">
+        <div className="flex border-b border-gray-100 dark:border-gray-800 px-4 sm:px-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {([
             { id: 'pipeline', label: 'Pipeline', icon: <Layers size={15} /> },
             { id: 'etiquetas', label: 'Etiquetas', icon: <Tag size={15} /> },
@@ -674,7 +677,7 @@ export function SettingsModal() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`relative flex items-center gap-2 px-1 py-3 text-sm font-medium mr-6 transition-colors ${
+              className={`relative flex items-center gap-2 shrink-0 px-1 py-3 text-sm font-medium mr-5 sm:mr-6 transition-colors ${
                 tab === t.id
                   ? 'text-indigo-600 dark:text-indigo-400'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'

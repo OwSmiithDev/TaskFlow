@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { useModalBehavior } from '../hooks/useModalBehavior'
 import type { Priority, Task } from '../types'
 import { PRIORITY_CONFIG, TAG_COLORS } from '../types'
 
@@ -45,12 +46,9 @@ export function TaskModal() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const titleRef = useRef<HTMLInputElement>(null)
 
+  const panelRef = useModalBehavior<HTMLDivElement>(() => handleClose())
+
   useEffect(() => { titleRef.current?.focus() }, [])
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [])
 
   function set<K extends keyof typeof form>(key: K, value: typeof form[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -141,6 +139,7 @@ export function TaskModal() {
       />
 
       <motion.div
+        ref={panelRef}
         initial={{ opacity: 0, scale: 0.94, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -217,7 +216,7 @@ export function TaskModal() {
           </motion.div>
 
           {/* Status + Prioridade */}
-          <motion.div variants={fieldVariants} className="grid grid-cols-2 gap-4">
+          <motion.div variants={fieldVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="status" className={labelClass}>Status</label>
               <select
@@ -251,7 +250,7 @@ export function TaskModal() {
           </motion.div>
 
           {/* Responsável + Prazo */}
-          <motion.div variants={fieldVariants} className="grid grid-cols-2 gap-4">
+          <motion.div variants={fieldVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="responsavel" className={labelClass}>Responsável</label>
               <input

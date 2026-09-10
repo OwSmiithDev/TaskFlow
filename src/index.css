@@ -27,8 +27,28 @@ body {
   background-image: url('./assets/fundo.jpg');
   background-size: cover;
   background-position: center;
-  background-attachment: fixed;
   background-repeat: no-repeat;
+}
+
+/* `background-attachment: fixed` is unreliable on iOS Safari: it forces a
+   repaint of a viewport-sized layer on every scroll frame and is widely
+   ignored. Restrict it to pointer devices, which is where it actually helps. */
+@media (hover: hover) and (pointer: fine) {
+  body {
+    background-attachment: fixed;
+  }
+}
+
+/* Respect users who ask for less motion — the app is animation-heavy. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 ::-webkit-scrollbar {
