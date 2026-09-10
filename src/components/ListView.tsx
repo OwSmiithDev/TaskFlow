@@ -1,16 +1,15 @@
 import { AnimatePresence } from 'framer-motion'
 import { ArrowUpDown, Filter } from 'lucide-react'
-import { useMemo } from 'react'
 import { useApp } from '../context/AppContext'
+import { useFilters } from '../context/FilterContext'
+import { useFilteredTasks, useResponsaveis } from '../hooks/useFilteredTasks'
 import type { Status } from '../types'
-import { PRIORITY_ORDER } from '../types'
 import { EmptyState } from './EmptyState'
 import { TaskRow } from './TaskRow'
 
 export function ListView() {
+  const { columns } = useApp()
   const {
-    tasks,
-    columns,
     search,
     filterStatus,
     setFilterStatus,
@@ -18,49 +17,17 @@ export function ListView() {
     setFilterResponsavel,
     sortBy,
     setSortBy,
-  } = useApp()
+  } = useFilters()
 
-  const responsaveis = useMemo(
-    () => [...new Set(tasks.map(t => t.responsavel).filter(Boolean))].sort(),
-    [tasks],
-  )
-
-  const filtered = useMemo(() => {
-    let list = [...tasks]
-
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      list = list.filter(
-        t =>
-          t.titulo.toLowerCase().includes(q) ||
-          t.descricao.toLowerCase().includes(q) ||
-          t.responsavel.toLowerCase().includes(q) ||
-          t.etiquetas.some(e => e.toLowerCase().includes(q)),
-      )
-    }
-
-    if (filterStatus) list = list.filter(t => t.status === filterStatus)
-    if (filterResponsavel) list = list.filter(t => t.responsavel === filterResponsavel)
-
-    list.sort((a, b) => {
-      if (sortBy === 'prioridade') return PRIORITY_ORDER[b.prioridade] - PRIORITY_ORDER[a.prioridade]
-      if (sortBy === 'prazo') {
-        if (!a.prazo) return 1
-        if (!b.prazo) return -1
-        return a.prazo.localeCompare(b.prazo)
-      }
-      return b.criado_em.localeCompare(a.criado_em)
-    })
-
-    return list
-  }, [tasks, search, filterStatus, filterResponsavel, sortBy])
+  const responsaveis = useResponsaveis()
+  const filtered = useFilteredTasks()
 
   const hasFilters = !!(search || filterStatus || filterResponsavel)
 
   return (
     <div className="space-y-4">
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
           <Filter size={13} />
           Filtrar:
@@ -96,7 +63,7 @@ export function ListView() {
           </select>
         )}
 
-        <div className="flex items-center gap-1.5 ml-auto">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto sm:ml-auto">
           <ArrowUpDown size={13} className="text-gray-400" />
           <select
             value={sortBy}

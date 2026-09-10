@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { LayoutGrid, List, Moon, Plus, Search, Settings, Sun } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useFilters } from '../context/FilterContext'
 
 function TaskFlowIcon({ size = 16 }: { size?: number }) {
   return (
@@ -17,8 +18,8 @@ const iconBtnClass =
   'p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 transition-colors shrink-0'
 
 export function Header() {
-  const { view, setView, theme, toggleTheme, search, setSearch, setIsCreating, setIsSettingsOpen } =
-    useApp()
+  const { view, setView, theme, toggleTheme, setIsCreating, setIsSettingsOpen } = useApp()
+  const { search, setSearch } = useFilters()
 
   const viewTabs = [
     { id: 'list' as const, label: 'Lista', icon: <List size={15} /> },

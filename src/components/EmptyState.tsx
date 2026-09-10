@@ -1,12 +1,14 @@
 import { Plus } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useFilters } from '../context/FilterContext'
 
 interface Props {
   filtered?: boolean
 }
 
 export function EmptyState({ filtered }: Props) {
-  const { setIsCreating, setSearch, setFilterStatus, setFilterResponsavel } = useApp()
+  const { setIsCreating } = useApp()
+  const { setSearch, setFilterStatus, setFilterResponsavel } = useFilters()
 
   const clearFilters = () => {
     setSearch('')

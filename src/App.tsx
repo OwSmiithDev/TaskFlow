@@ -1,13 +1,21 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { AppProvider, useApp } from './context/AppContext'
+import { Suspense, lazy } from 'react'
+import { useApp } from './context/AppContext'
+import { AppProvider } from './context/AppProvider'
+import { FilterProvider } from './context/FilterProvider'
 import { Header } from './components/Header'
 import { ListView } from './components/ListView'
 import { KanbanView } from './components/KanbanView'
 import { TaskModal } from './components/TaskModal'
 import { TaskViewModal } from './components/TaskViewModal'
-import { SettingsModal } from './components/SettingsModal'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { ToastContainer } from './components/Toast'
+
+// Settings is the largest component in the app and most sessions never open
+// it, so it is fetched on demand rather than in the initial bundle.
+const SettingsModal = lazy(() =>
+  import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })),
+)
 
 function AppContent() {
   const {
@@ -61,7 +69,11 @@ function AppContent() {
       </main>
 
       <AnimatePresence>
-        {isSettingsOpen && <SettingsModal key="settings" />}
+        {isSettingsOpen && (
+          <Suspense key="settings" fallback={null}>
+            <SettingsModal />
+          </Suspense>
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
@@ -95,7 +107,9 @@ function AppContent() {
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <FilterProvider>
+        <AppContent />
+      </FilterProvider>
     </AppProvider>
   )
 }
